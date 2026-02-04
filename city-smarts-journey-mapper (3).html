@@ -1,0 +1,2204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>City Smarts – Journey Mapper</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Lato', sans-serif;
+            background: #fafafa;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useMemo } = React;
+        
+        // Icon components
+        const Calendar = ({ size = 24, color = "currentColor", strokeWidth = 2 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+        );
+        
+        const Download = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+        );
+        
+        const Plus = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+        );
+        
+        const Trash2 = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+        );
+        
+        const Edit2 = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+            </svg>
+        );
+        
+        const Check = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+        );
+        
+        const X = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        );
+
+// Test date data
+const SAT_DATES = [
+  { date: '2026-03-14', label: 'March 2026', registration_deadline: '2026-02-13' },
+  { date: '2026-05-02', label: 'May 2026', registration_deadline: '2026-04-02' },
+  { date: '2026-06-06', label: 'June 2026', registration_deadline: '2026-05-07' },
+  { date: '2026-08-29', label: 'August 2026', registration_deadline: '2026-07-30' },
+  { date: '2026-10-03', label: 'October 2026', registration_deadline: '2026-09-03' },
+  { date: '2026-11-07', label: 'November 2026', registration_deadline: '2026-10-08' },
+  { date: '2026-12-05', label: 'December 2026', registration_deadline: '2026-11-05' },
+  { date: '2027-03-13', label: 'March 2027', registration_deadline: '2027-02-12' },
+  { date: '2027-05-08', label: 'May 2027', registration_deadline: '2027-04-08' },
+  { date: '2027-06-05', label: 'June 2027', registration_deadline: '2027-05-06' },
+  { date: '2027-08-28', label: 'August 2027', registration_deadline: '2027-07-29' },
+  { date: '2027-10-02', label: 'October 2027', registration_deadline: '2027-09-02' },
+  { date: '2027-11-06', label: 'November 2027', registration_deadline: '2027-10-07' },
+  { date: '2027-12-04', label: 'December 2027', registration_deadline: '2027-11-04' },
+  { date: '2028-03-11', label: 'March 2028', registration_deadline: '2028-02-10' },
+  { date: '2028-05-06', label: 'May 2028', registration_deadline: '2028-04-06' },
+  { date: '2028-06-03', label: 'June 2028', registration_deadline: '2028-05-04' },
+  { date: '2028-08-26', label: 'August 2028', registration_deadline: '2028-07-27' },
+  { date: '2028-10-07', label: 'October 2028', registration_deadline: '2028-09-07' },
+  { date: '2028-11-04', label: 'November 2028', registration_deadline: '2028-10-05' },
+  { date: '2028-12-02', label: 'December 2028', registration_deadline: '2028-11-02' },
+  { date: '2029-03-10', label: 'March 2029', registration_deadline: '2029-02-09' },
+  { date: '2029-05-05', label: 'May 2029', registration_deadline: '2029-04-05' },
+  { date: '2029-06-02', label: 'June 2029', registration_deadline: '2029-05-03' }
+];
+
+const ACT_DATES = [
+  { date: '2026-02-07', label: 'February 2026', registration_deadline: '2026-01-09' },
+  { date: '2026-04-04', label: 'April 2026', registration_deadline: '2026-03-06' },
+  { date: '2026-06-13', label: 'June 2026', registration_deadline: '2026-05-15' },
+  { date: '2026-07-18', label: 'July 2026', registration_deadline: '2026-06-19' },
+  { date: '2026-09-12', label: 'September 2026', registration_deadline: '2026-08-14' },
+  { date: '2026-10-24', label: 'October 2026', registration_deadline: '2026-09-25' },
+  { date: '2026-12-12', label: 'December 2026', registration_deadline: '2026-11-13' },
+  { date: '2027-02-06', label: 'February 2027', registration_deadline: '2027-01-08' },
+  { date: '2027-04-10', label: 'April 2027', registration_deadline: '2027-03-12' },
+  { date: '2027-06-12', label: 'June 2027', registration_deadline: '2027-05-14' },
+  { date: '2027-07-17', label: 'July 2027', registration_deadline: '2027-06-18' },
+  { date: '2027-09-11', label: 'September 2027', registration_deadline: '2027-08-13' },
+  { date: '2027-10-23', label: 'October 2027', registration_deadline: '2027-09-24' },
+  { date: '2027-12-11', label: 'December 2027', registration_deadline: '2027-11-12' },
+  { date: '2028-02-12', label: 'February 2028', registration_deadline: '2028-01-14' },
+  { date: '2028-04-08', label: 'April 2028', registration_deadline: '2028-03-10' },
+  { date: '2028-06-10', label: 'June 2028', registration_deadline: '2028-05-12' },
+  { date: '2028-07-15', label: 'July 2028', registration_deadline: '2028-06-16' },
+  { date: '2028-09-09', label: 'September 2028', registration_deadline: '2028-08-11' },
+  { date: '2028-10-28', label: 'October 2028', registration_deadline: '2028-09-29' },
+  { date: '2028-12-09', label: 'December 2028', registration_deadline: '2028-11-10' },
+  { date: '2029-02-10', label: 'February 2029', registration_deadline: '2029-01-12' },
+  { date: '2029-04-14', label: 'April 2029', registration_deadline: '2029-03-16' },
+  { date: '2029-06-09', label: 'June 2029', registration_deadline: '2029-05-11' }
+];
+
+const APP_MILESTONES = {
+  common_app_open: '08-01',
+  uc_open: '08-01',
+  uc_filing_start: '10-01',
+  uc_filing_end: '11-30',
+  ucas_equal_consideration: '01-29',
+  oxbridge_deadline: '10-15',
+  fafsa_open: '10-01',
+  css_open: '10-01'
+};
+
+function TimelineGenerator() {
+  const [formData, setFormData] = useState({
+    studentName: '',
+    startDate: new Date().toISOString().split('T')[0],
+    startingGrade: '11',
+    cadence: 'high-touch',
+    curriculum: 'standard', // standard, ap, or ib
+    applicationSystems: {
+      common_app: true,
+      uc_system: false,
+      ucas: false,
+      oxbridge: false,
+      canada: false
+    },
+    testPrepProvider: 'city-smarts',
+    assessmentNeeded: true,
+    assessmentTiming: 'asap',
+    selectedTestSeasons: [],
+    selectedTestDates: [],
+    essaySupport: false,
+    testing_plan: 'sat'
+  });
+
+  const [events, setEvents] = useState([]);
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [showCustomEventForm, setShowCustomEventForm] = useState(false);
+  const [showCSVText, setShowCSVText] = useState(false);
+  const [customEvent, setCustomEvent] = useState({ date: '', title: '', category: 'Custom', notes: '' });
+
+  // Helper to parse YYYY-MM-DD strings in local timezone (not UTC)
+  const parseLocalDate = (dateStr) => {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
+  const updateFormData = (field, value) => {
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // If changing starting grade or start date, validate assessment timing
+      if (field === 'startingGrade' || field === 'startDate') {
+        const grade = parseInt(field === 'startingGrade' ? value : prev.startingGrade);
+        const startDate = new Date(field === 'startDate' ? value : prev.startDate);
+        const startMonth = startDate.getMonth(); // 0-11
+        
+        // Check if current assessment timing is still valid
+        const currentTiming = prev.assessmentTiming;
+        let isValid = true;
+        
+        if (grade === 12 && currentTiming !== 'asap') {
+          isValid = false;
+        } else if (currentTiming === 'spring_10th') {
+          // Only valid if grade < 10, OR grade 10 before March
+          isValid = grade < 10 || (grade === 10 && startMonth < 2);
+        } else if (currentTiming === 'summer_after_10th') {
+          // Only valid if grade < 10, OR grade 10 before June
+          isValid = grade < 10 || (grade === 10 && startMonth < 5);
+        } else if (currentTiming === 'fall_11th') {
+          // Only valid if grade < 11, OR grade 11 in Sept/Oct
+          isValid = grade < 11 || (grade === 11 && startMonth >= 8 && startMonth < 10);
+        } else if (currentTiming === 'spring_11th') {
+          // Only valid if grade < 11, OR grade 11 before March
+          isValid = grade < 11 || (grade === 11 && startMonth < 2);
+        }
+        
+        // If invalid, reset to ASAP
+        if (!isValid) {
+          updated.assessmentTiming = 'asap';
+        }
+      }
+      
+      return updated;
+    });
+  };
+
+  const updateApplicationSystem = (system, checked) => {
+    setFormData(prev => ({
+      ...prev,
+      applicationSystems: { ...prev.applicationSystems, [system]: checked }
+    }));
+  };
+
+  const toggleTestDate = (dateStr) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedTestDates: prev.selectedTestDates.includes(dateStr)
+        ? prev.selectedTestDates.filter(d => d !== dateStr)
+        : [...prev.selectedTestDates, dateStr]
+    }));
+  };
+
+  const toggleTestSeason = (season) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedTestSeasons: prev.selectedTestSeasons.includes(season)
+        ? prev.selectedTestSeasons.filter(s => s !== season)
+        : [...prev.selectedTestSeasons, season]
+    }));
+  };
+
+  // Get test dates organized by season relative to student's grade
+  const getTestDatesBySeason = () => {
+    // Calculate when the student will be in 11th and 12th grade
+    const startGrade = parseInt(formData.startingGrade);
+    const startDate = new Date(formData.startDate);
+    const startYear = startDate.getFullYear();
+    const startMonth = startDate.getMonth();
+    
+    // Calculate how many years until junior year
+    const yearsUntilJunior = 11 - startGrade;
+    const yearsUntilSenior = 12 - startGrade;
+    
+    // If starting in fall/spring, school year is current year, otherwise previous year
+    const currentSchoolYear = startMonth >= 8 ? startYear : startYear - 1;
+    
+    const juniorSchoolYear = currentSchoolYear + yearsUntilJunior;
+    const seniorSchoolYear = currentSchoolYear + yearsUntilSenior;
+    
+    const allDates = formData.testing_plan === 'sat' ? SAT_DATES : 
+                     formData.testing_plan === 'act' ? ACT_DATES :
+                     [...SAT_DATES, ...ACT_DATES];
+    
+    // When displaying "both", add test type to label
+    const formatDateLabel = (testDate) => {
+      if (formData.testing_plan === 'both') {
+        const isSAT = SAT_DATES.find(d => d.date === testDate.date);
+        const testType = isSAT ? 'SAT' : 'ACT';
+        return { ...testDate, label: `${testDate.label} ${testType}` };
+      }
+      return testDate;
+    };
+    
+    const seasons = {
+      summer_before_junior: {
+        label: 'Summer Before Junior Year',
+        dates: allDates
+          .filter(d => {
+            const date = parseLocalDate(d.date);
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            return year === juniorSchoolYear && month >= 5 && month <= 7; // June-August (month 5=June)
+          })
+          .map(formatDateLabel)
+      },
+      fall_junior: {
+        label: 'Fall of Junior Year',
+        dates: allDates
+          .filter(d => {
+            const date = parseLocalDate(d.date);
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            return year === juniorSchoolYear && month >= 8 && month <= 11; // Sep-Dec
+          })
+          .map(formatDateLabel)
+      },
+      spring_junior: {
+        label: 'Spring of Junior Year',
+        dates: allDates
+          .filter(d => {
+            const date = parseLocalDate(d.date);
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            return year === juniorSchoolYear + 1 && month >= 2 && month <= 4; // Mar-May
+          })
+          .map(formatDateLabel)
+      },
+      summer_before_senior: {
+        label: 'Summer Before Senior Year',
+        dates: allDates
+          .filter(d => {
+            const date = parseLocalDate(d.date);
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            return year === seniorSchoolYear && month >= 5 && month <= 7; // June-August
+          })
+          .map(formatDateLabel)
+      },
+      fall_senior: {
+        label: 'Fall of Senior Year',
+        dates: allDates
+          .filter(d => {
+            const date = parseLocalDate(d.date);
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            return year === seniorSchoolYear && month >= 8 && month <= 11; // Sep-Dec
+          })
+          .map(formatDateLabel)
+      }
+    };
+    
+    return seasons;
+  };
+
+  const getSchoolYear = (date, grade) => {
+    const d = new Date(date);
+    const month = d.getMonth();
+    const baseYear = d.getFullYear();
+    
+    // If before September, we're in the tail end of the previous school year
+    const currentSchoolYear = month < 8 ? baseYear - 1 : baseYear;
+    
+    // Calculate the school year for the target grade
+    const gradeNumber = parseInt(grade);
+    const startGrade = parseInt(formData.startingGrade);
+    const yearOffset = gradeNumber - startGrade;
+    
+    return currentSchoolYear + yearOffset;
+  };
+
+  const createEvent = (date, title, category, notes = '', fixed = true, tags = []) => ({
+    id: Math.random().toString(36).substr(2, 9),
+    date,
+    title,
+    category,
+    notes,
+    fixed,
+    tags,
+    editable: true
+  });
+
+  const addMonthsToDate = (dateStr, months) => {
+    const date = new Date(dateStr);
+    date.setMonth(date.getMonth() + months);
+    return date.toISOString().split('T')[0];
+  };
+
+  const generateTimeline = () => {
+    console.log('Starting timeline generation...');
+    const newEvents = [];
+    const startDate = new Date(formData.startDate);
+    const startGrade = parseInt(formData.startingGrade);
+    const startMonth = startDate.getMonth();
+    const startYear = startDate.getFullYear();
+    console.log('Start date:', startDate, 'Grade:', startGrade);
+
+    // Add initial consultation at start date
+    newEvents.push(createEvent(
+      formData.startDate,
+      'General Admissions Consultation',
+      'Milestone',
+      'Initial consultation and timeline planning',
+      false,
+      ['initial-consultation']
+    ));
+
+    // Helper to create date for a specific grade and month
+    const createDateForGrade = (grade, month, day = 15) => {
+      const schoolYear = getSchoolYear(formData.startDate, grade.toString());
+      const year = month >= 8 ? schoolYear : schoolYear + 1;
+      // Format directly as string to avoid timezone issues
+      const m = (month + 1).toString().padStart(2, '0');
+      const d = day.toString().padStart(2, '0');
+      return `${year}-${m}-${d}`;
+    };
+
+    // Helper to check if we should include an event based on start date
+    const shouldIncludeEvent = (eventGrade, eventMonth, eventDay = 15) => {
+      // Never include events from grades before the starting grade
+      if (eventGrade < startGrade) return false;
+      
+      // For events in future grades, always include
+      if (eventGrade > startGrade) return true;
+      
+      // Same grade - check if event date is after start date
+      const eventDateStr = createDateForGrade(eventGrade, eventMonth, eventDay);
+      const eventDate = parseLocalDate(eventDateStr);
+      return eventDate >= startDate;
+    };
+
+    // Helper to check if a date is during application season (Aug 1 of senior year onwards)
+    const isApplicationSeason = (dateStr) => {
+      const date = parseLocalDate(dateStr);
+      const seniorYear = getSchoolYear(formData.startDate, '12');
+      const appSeasonStart = new Date(seniorYear, 7, 1); // August 1 of senior year (month 7 = August)
+      return date >= appSeasonStart;
+    };
+
+    // Fixed milestone meetings for each grade
+    const fixedMilestones = [
+      // 9th grade
+      { grade: 9, month: 0, title: 'January Semester Check-in', category: 'Milestone' },
+      { grade: 9, month: 5, title: 'End of Year Check-in', category: 'Milestone' },
+      
+      // 10th grade
+      { grade: 10, month: 8, title: 'Beginning of Year Check-in', category: 'Milestone' },
+      { grade: 10, month: 0, title: 'Mid-Year Check-in', category: 'Milestone' },
+      { grade: 10, month: 5, title: 'End of Year Check-in', category: 'Milestone' },
+      
+      // 11th grade
+      { grade: 11, month: 8, title: 'Beginning of Year Check-in', category: 'Milestone' },
+      { grade: 11, month: 0, title: 'Mid-Year Check-in', category: 'Milestone', notes: 'Review semester 1 grades and plan spring college visits' },
+      { grade: 11, month: 0, day: 20, title: 'College List Meeting', category: 'Milestone', notes: 'Develop initial college list' },
+      { grade: 11, month: 2, title: 'College List Check', category: 'Milestone' },
+      { grade: 11, month: 4, title: 'Request Teacher Recommendations', category: 'Milestone', notes: 'Ask teachers before end of school year' },
+      { grade: 11, month: 5, title: 'End of Year Check-in', category: 'Milestone' },
+      
+      // 12th grade
+      { grade: 12, month: 8, title: 'Schedule Alumni Interviews', category: 'Application', notes: 'Reach out to schools offering interviews' },
+      { grade: 12, month: 9, title: 'Application Review', category: 'Milestone', notes: 'Review all applications before submission' },
+      { grade: 12, month: 11, day: 10, title: 'RD Application Review', category: 'Milestone', notes: 'Final review of regular decision applications' },
+      { grade: 12, month: 4, day: 1, title: 'College Decision Day', category: 'Deadline', notes: 'National commitment deadline - submit deposit' }
+    ];
+
+    // Add fixed milestones
+    fixedMilestones.forEach(milestone => {
+      const day = milestone.day || 15;
+      if (shouldIncludeEvent(milestone.grade, milestone.month, day)) {
+        newEvents.push(createEvent(
+          createDateForGrade(milestone.grade, milestone.month, day),
+          milestone.title,
+          milestone.category,
+          milestone.notes || '',
+          true,
+          ['fixed-milestone']
+        ));
+      }
+    });
+
+    // Add curriculum-specific milestones
+    if (formData.curriculum === 'ap') {
+      // Add AP Exams in May for grades 9-11 (exclude senior year)
+      [9, 10, 11].forEach(grade => {
+        if (grade >= startGrade && grade < 12) {
+          const apExamDate = createDateForGrade(grade, 4, 1); // May 1st
+          if (parseLocalDate(apExamDate) >= startDate) {
+            newEvents.push(createEvent(
+              apExamDate,
+              'AP Exams',
+              'Testing',
+              'Advanced Placement exams (typically first two weeks of May)',
+              false,
+              ['curriculum']
+            ));
+          }
+        }
+      });
+    } else if (formData.curriculum === 'ib') {
+      // Add IB Predicted Grades review in October of senior year
+      const ibGradesDate = createDateForGrade(12, 9, 15); // October 15th of senior year
+      if (startGrade <= 12 && parseLocalDate(ibGradesDate) >= startDate) {
+        newEvents.push(createEvent(
+          ibGradesDate,
+          'Review IB Predicted Grades',
+          'Milestone',
+          'Review predicted IB Diploma grades with counselor',
+          false,
+          ['curriculum']
+        ));
+      }
+    }
+
+    // Add cadence-based check-ins
+    if (formData.cadence === 'high-touch') {
+      // 9th-10th grade: every 8 weeks
+      [9, 10].forEach(grade => {
+        if (grade >= startGrade) {
+          const gradeStartDate = createDateForGrade(grade, 8, 1);
+          for (let weeks = 8; weeks < 52; weeks += 8) {
+            const checkInDate = new Date(gradeStartDate);
+            checkInDate.setDate(checkInDate.getDate() + (weeks * 7));
+            const dateStr = checkInDate.toISOString().split('T')[0];
+            
+            // Don't add if too close to a fixed milestone
+            const tooClose = newEvents.some(e => {
+              const diff = Math.abs(parseLocalDate(e.date) - parseLocalDate(dateStr)) / (1000 * 60 * 60 * 24);
+              return diff < 14;
+            });
+            
+            if (!tooClose && checkInDate >= startDate) {
+              const inAppSeason = isApplicationSeason(dateStr);
+              newEvents.push(createEvent(
+                dateStr,
+                'Consulting Check-in',
+                'Check-in',
+                inAppSeason ? 'Application Season Support' : 'Regular progress check',
+                false,
+                ['cadence-checkin']
+              ));
+            }
+          }
+        }
+      });
+
+      // 11th grade: every 6 weeks
+      if (startGrade <= 11) {
+        const gradeStartDate = createDateForGrade(11, 8, 1);
+        for (let weeks = 6; weeks < 52; weeks += 6) {
+          const checkInDate = new Date(gradeStartDate);
+          checkInDate.setDate(checkInDate.getDate() + (weeks * 7));
+          const dateStr = checkInDate.toISOString().split('T')[0];
+          
+          const tooClose = newEvents.some(e => {
+            const diff = Math.abs(parseLocalDate(e.date) - parseLocalDate(dateStr)) / (1000 * 60 * 60 * 24);
+            return diff < 14;
+          });
+          
+          if (!tooClose && checkInDate >= startDate) {
+            const inAppSeason = isApplicationSeason(dateStr);
+            newEvents.push(createEvent(
+              dateStr,
+              'Consulting Check-in',
+              'Check-in',
+              inAppSeason ? 'Application Season Support' : 'Regular progress check',
+              false,
+              ['cadence-checkin']
+            ));
+          }
+        }
+      }
+
+      // 12th grade: every 2-3 weeks (Sep-Nov)
+      if (startGrade <= 12) {
+        const seniorYear = getSchoolYear(formData.startDate, '12');
+        const sepStart = new Date(`${seniorYear}-09-01`);
+        const novEnd = new Date(`${seniorYear}-11-15`);
+        
+        let weekCounter = 2;
+        while (sepStart.getTime() + (weekCounter * 7 * 24 * 60 * 60 * 1000) <= novEnd.getTime()) {
+          const checkInDate = new Date(sepStart.getTime() + (weekCounter * 7 * 24 * 60 * 60 * 1000));
+          
+          if (checkInDate <= novEnd) {
+            const dateStr = checkInDate.toISOString().split('T')[0];
+            const tooClose = newEvents.some(e => {
+              const diff = Math.abs(parseLocalDate(e.date) - parseLocalDate(dateStr)) / (1000 * 60 * 60 * 24);
+              return diff < 10;
+            });
+            
+            if (!tooClose && checkInDate >= startDate) {
+              newEvents.push(createEvent(
+                dateStr,
+                'Senior Fall Check-in',
+                'Check-in',
+                'Application season support',
+                false,
+                ['senior-intensive']
+              ));
+            }
+          }
+          weekCounter += 2.5;
+        }
+      }
+    }
+
+    // Test prep and assessment
+    // Assessment can happen regardless of provider (City Smarts or Undecided)
+    // BUT not for 12th graders - it's too late
+    if ((formData.testPrepProvider === 'city-smarts' || formData.testPrepProvider === 'undecided') && formData.assessmentNeeded && startGrade < 12) {
+      let assessmentDate;
+      
+      if (formData.assessmentTiming === 'asap') {
+        // Schedule 2 weeks from start date
+        const asapDate = new Date(formData.startDate);
+        asapDate.setDate(asapDate.getDate() + 14);
+        assessmentDate = `${asapDate.getFullYear()}-${String(asapDate.getMonth() + 1).padStart(2, '0')}-${String(asapDate.getDate()).padStart(2, '0')}`;
+      } else if (formData.assessmentTiming === 'spring_10th') {
+        assessmentDate = createDateForGrade(10, 3, 15);
+      } else if (formData.assessmentTiming === 'summer_after_10th') {
+        assessmentDate = createDateForGrade(10, 6, 15);
+      } else if (formData.assessmentTiming === 'fall_11th') {
+        assessmentDate = createDateForGrade(11, 9, 15);
+      } else if (formData.assessmentTiming === 'spring_11th') {
+        assessmentDate = createDateForGrade(11, 3, 15);
+      }
+      
+      if (assessmentDate && parseLocalDate(assessmentDate) >= startDate) {
+        newEvents.push(createEvent(
+          assessmentDate,
+          'Practice SAT & ACT Assessment',
+          'Testing',
+          'Complete diagnostic testing at City Smarts classroom',
+          false,
+          ['assessment']
+        ));
+        
+        // Add planning call 1 week after assessment
+        const planCallDate = parseLocalDate(assessmentDate);
+        planCallDate.setDate(planCallDate.getDate() + 7);
+        const planCallDateStr = `${planCallDate.getFullYear()}-${String(planCallDate.getMonth() + 1).padStart(2, '0')}-${String(planCallDate.getDate()).padStart(2, '0')}`;
+        newEvents.push(createEvent(
+          planCallDateStr,
+          'Test Planning Call',
+          'Testing',
+          'Review assessment results and create test prep plan',
+          false,
+          ['assessment']
+        ));
+      }
+
+      // Only add "Begin test prep" if provider is City Smarts (not undecided)
+      if (formData.testPrepProvider === 'city-smarts' && formData.selectedTestDates.length > 0) {
+        const firstTestDate = formData.selectedTestDates.sort()[0];
+        
+        // Calculate 4 months before first test
+        const fourMonthsBeforeTest = parseLocalDate(firstTestDate);
+        fourMonthsBeforeTest.setMonth(fourMonthsBeforeTest.getMonth() - 4);
+        
+        // Use the later of: 4 months before test OR right after assessment
+        let prepStartDate;
+        if (assessmentDate) {
+          const afterAssessment = parseLocalDate(assessmentDate);
+          afterAssessment.setDate(afterAssessment.getDate() + 21); // 3 weeks after assessment
+          prepStartDate = afterAssessment > fourMonthsBeforeTest ? afterAssessment : fourMonthsBeforeTest;
+        } else {
+          prepStartDate = fourMonthsBeforeTest;
+        }
+        
+        if (prepStartDate >= startDate) {
+          const prepDateStr = `${prepStartDate.getFullYear()}-${String(prepStartDate.getMonth() + 1).padStart(2, '0')}-${String(prepStartDate.getDate()).padStart(2, '0')}`;
+          newEvents.push(createEvent(
+            prepDateStr,
+            'Begin Test Prep',
+            'Testing',
+            'Start regular test preparation sessions',
+            false,
+            ['test-prep']
+          ));
+        }
+      }
+    }
+
+    // If test prep provider is undecided, add a meeting to discuss
+    // Only for students in 10th grade or earlier
+    if (formData.testPrepProvider === 'undecided' && startGrade <= 10) {
+      const discussDate = createDateForGrade(10, 2, 1); // March of 10th grade
+      if (parseLocalDate(discussDate) >= startDate) {
+        newEvents.push(createEvent(
+          discussDate,
+          'Discuss Test Prep Options',
+          'Testing',
+          'Review test prep providers and create testing strategy',
+          false,
+          ['test-prep']
+        ));
+      }
+    }
+
+    // Add selected test dates with specific test type
+    formData.selectedTestDates.forEach(dateStr => {
+      const testDate = SAT_DATES.find(d => d.date === dateStr) || ACT_DATES.find(d => d.date === dateStr);
+      if (testDate) {
+        // Determine test type
+        let testType = '';
+        if (formData.testing_plan === 'sat') {
+          testType = 'SAT';
+        } else if (formData.testing_plan === 'act') {
+          testType = 'ACT';
+        } else if (formData.testing_plan === 'both') {
+          // If both, check which list the date is from
+          testType = SAT_DATES.find(d => d.date === dateStr) ? 'SAT' : 'ACT';
+        }
+        
+        newEvents.push(createEvent(
+          dateStr,
+          `${testType} - ${testDate.label}`,
+          'Testing',
+          testDate.registration_deadline ? `Registration deadline: ${parseLocalDate(testDate.registration_deadline).toLocaleDateString()}` : '',
+          true,
+          ['test-date']
+        ));
+      }
+    });
+
+    // Essay support
+    if (formData.essaySupport) {
+      // June before senior year (end of junior year)
+      const essayStartDate = createDateForGrade(11, 5, 15); 
+      if (parseLocalDate(essayStartDate) >= startDate) {
+        newEvents.push(createEvent(
+          essayStartDate,
+          'Begin Essay Work',
+          'Essay',
+          'Start personal statement brainstorming and drafting',
+          false,
+          ['essay']
+        ));
+      }
+      
+      // August 1st of the summer BEFORE senior year starts
+      const seniorYear = getSchoolYear(formData.startDate, '12');
+      const suppStartDate = `${seniorYear}-08-01`;
+      if (parseLocalDate(suppStartDate) >= startDate) {
+        newEvents.push(createEvent(
+          suppStartDate,
+          'Begin Supplemental Essays',
+          'Essay',
+          'Start working on school-specific essays',
+          false,
+          ['essay']
+        ));
+      }
+    }
+
+    // Application system milestones
+    const seniorYear = getSchoolYear(formData.startDate, '12');
+    
+    // Helper to create deadline dates in local timezone without UTC conversion
+    // Month parameter should be 1-12 (normal calendar months)
+    const createDeadlineDate = (year, month, day) => {
+      const y = year.toString();
+      const m = month.toString().padStart(2, '0');
+      const d = day.toString().padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    };
+    
+    if (formData.applicationSystems.common_app) {
+      newEvents.push(createEvent(
+        createDeadlineDate(seniorYear, 8, 1),
+        'Common App Opens',
+        'Application',
+        'Common Application becomes available',
+        true,
+        ['deadline']
+      ));
+    }
+
+    if (formData.applicationSystems.uc_system) {
+      newEvents.push(createEvent(
+        createDeadlineDate(seniorYear, 11, 1),
+        'UC Filing Opens',
+        'Application',
+        'University of California application filing period begins',
+        true,
+        ['deadline']
+      ));
+      newEvents.push(createEvent(
+        createDeadlineDate(seniorYear, 11, 29),
+        'UC Filing Deadline',
+        'Application',
+        'Final deadline for UC applications',
+        true,
+        ['deadline']
+      ));
+    }
+
+    // US Application Deadlines
+    if (formData.applicationSystems.common_app) {
+      newEvents.push(createEvent(
+        createDeadlineDate(seniorYear, 10, 15),
+        'Southern Early Action Deadline',
+        'Application',
+        'Early Action deadline for Georgia, Texas, UNC, Clemson, etc.',
+        true,
+        ['deadline']
+      ));
+      newEvents.push(createEvent(
+        createDeadlineDate(seniorYear, 11, 1),
+        'Early Action/Early Decision Deadline',
+        'Application',
+        'Most common EA/ED deadline',
+        true,
+        ['deadline']
+      ));
+      newEvents.push(createEvent(
+        createDeadlineDate(seniorYear + 1, 1, 1),
+        'Regular Decision & ED2 Deadline',
+        'Application',
+        'Regular Decision and Early Decision 2 deadline',
+        true,
+        ['deadline']
+      ));
+    }
+
+    // Canadian Application Deadlines
+    if (formData.applicationSystems.canada) {
+      newEvents.push(createEvent(
+        createDeadlineDate(seniorYear, 10, 15),
+        'Canadian Applications Open',
+        'Application',
+        'Most Canadian university applications open for submission',
+        true,
+        ['deadline']
+      ));
+      newEvents.push(createEvent(
+        createDeadlineDate(seniorYear + 1, 1, 15),
+        'Canadian University Deadlines',
+        'Application',
+        'Typical deadline for Canadian universities (varies by school)',
+        false,
+        ['deadline']
+      ));
+    }
+
+    // UK Application Deadlines
+    if (formData.applicationSystems.ucas) {
+      newEvents.push(createEvent(
+        createDeadlineDate(seniorYear + 1, 1, 29),
+        'UCAS Equal Consideration Deadline',
+        'Application',
+        'UK universities equal consideration deadline',
+        true,
+        ['deadline']
+      ));
+    }
+
+    if (formData.applicationSystems.oxbridge) {
+      // Register for Oxbridge Admissions Tests (August, summer before senior year)
+      const juniorYear = getSchoolYear(formData.startDate, '11');
+      newEvents.push(createEvent(
+        createDeadlineDate(juniorYear, 7, 15),
+        'Register for Oxbridge Admissions Tests',
+        'Testing',
+        'Register for ESAT, TMUA, or TARA by late September',
+        false,
+        ['oxbridge']
+      ));
+      
+      // Oxbridge Application Deadline (October 15)
+      newEvents.push(createEvent(
+        createDeadlineDate(seniorYear, 10, 15),
+        'Oxbridge Application Deadline',
+        'Application',
+        'Oxford and Cambridge UCAS application deadline (6pm UK time)',
+        true,
+        ['deadline']
+      ));
+      
+      // Submit Written Work (November 10)
+      newEvents.push(createEvent(
+        createDeadlineDate(seniorYear, 11, 10),
+        'Submit Oxbridge Written Work',
+        'Application',
+        'Submit required essays to your college (if applicable to your course)',
+        false,
+        ['oxbridge']
+      ));
+      
+      // Oxbridge Interviews (December)
+      newEvents.push(createEvent(
+        createDeadlineDate(seniorYear, 11, 15),
+        'Oxbridge Interviews',
+        'Application',
+        'Interview invitations sent; interviews typically held in December',
+        false,
+        ['oxbridge']
+      ));
+      
+      // Oxbridge Decision Day (January 13)
+      newEvents.push(createEvent(
+        createDeadlineDate(seniorYear + 1, 1, 13),
+        'Oxbridge Decision Day',
+        'Deadline',
+        'Oxford and Cambridge release admissions decisions',
+        true,
+        ['oxbridge']
+      ));
+    }
+
+    // Financial aid
+    if (formData.applicationSystems.common_app || formData.applicationSystems.uc_system) {
+      newEvents.push(createEvent(
+        createDeadlineDate(seniorYear, 10, 1),
+        'FAFSA Opens',
+        'Financial Aid',
+        'Free Application for Federal Student Aid becomes available',
+        true,
+        ['deadline']
+      ));
+      newEvents.push(createEvent(
+        createDeadlineDate(seniorYear, 10, 1),
+        'CSS Profile Opens',
+        'Financial Aid',
+        'CSS Profile for institutional aid becomes available',
+        true,
+        ['deadline']
+      ));
+    }
+
+    // Filter out any events that are before the start date and sort
+    const filteredEvents = newEvents.filter(event => parseLocalDate(event.date) >= startDate);
+    setEvents(filteredEvents.sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date)));
+    console.log('Timeline generation complete. Total events:', filteredEvents.length);
+  };
+
+  const deleteEvent = (id) => {
+    setEvents(events.filter(e => e.id !== id));
+  };
+
+  const startEditingEvent = (event) => {
+    setEditingEvent({ ...event });
+  };
+
+  const saveEditedEvent = () => {
+    setEvents(events.map(e => e.id === editingEvent.id ? editingEvent : e).sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date)));
+    setEditingEvent(null);
+  };
+
+  const addCustomEvent = () => {
+    if (customEvent.date && customEvent.title) {
+      const newEvent = createEvent(
+        customEvent.date,
+        customEvent.title,
+        customEvent.category,
+        customEvent.notes,
+        false,
+        ['custom']
+      );
+      setEvents([...events, newEvent].sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date)));
+      setCustomEvent({ date: '', title: '', category: 'Custom', notes: '' });
+      setShowCustomEventForm(false);
+    }
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Date', 'Event', 'Category', 'Notes', 'Fixed'];
+    const rows = events.map(e => [
+      parseLocalDate(e.date).toLocaleDateString(),
+      e.title,
+      e.category,
+      e.notes || '',
+      e.fixed ? 'Yes' : 'No'
+    ]);
+    
+    const csv = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const filename = formData.studentName ? `${formData.studentName.replace(/\s+/g, '_')}_timeline.csv` : 'timeline.csv';
+    a.href = url;
+    a.download = filename;
+    a.click();
+  };
+
+  const exportToICS = () => {
+    const icsEvents = events.map(e => {
+      const date = parseLocalDate(e.date);
+      // Format date as YYYYMMDD for ICS (all-day event)
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}${month}${day}`;
+      
+      return `BEGIN:VEVENT
+UID:${e.id}@citysmarts.net
+DTSTAMP:${dateStr}T120000Z
+DTSTART;VALUE=DATE:${dateStr}
+SUMMARY:${e.title}
+DESCRIPTION:${e.notes || e.category}
+CATEGORIES:${e.category}
+END:VEVENT`;
+    }).join('\n');
+
+    const ics = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//City Smarts//Timeline Generator//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+${icsEvents}
+END:VCALENDAR`;
+
+    const blob = new Blob([ics], { type: 'text/calendar' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const filename = formData.studentName ? `${formData.studentName.replace(/\s+/g, '_')}_timeline.ics` : 'timeline.ics';
+    a.href = url;
+    a.download = filename;
+    a.click();
+  };
+
+  const printPDF = () => {
+    // Create a new window with print-optimized styling
+    const printWindow = window.open('', '_blank');
+    
+    const gradeText = {
+      '9': '9th Grade',
+      '10': '10th Grade',
+      '11': '11th Grade',
+      '12': '12th Grade (Senior Year)'
+    }[formData.startingGrade] || `Grade ${formData.startingGrade}`;
+    
+    // Category colors for print
+    const categoryColors = {
+      'Milestone': '#d4edda',
+      'Check-in': '#fff3cd',
+      'Testing': '#cfe2ff',
+      'Essay': '#f8d7da',
+      'Financial Aid': '#d1ecf1',
+      'Deadline': '#f5c6cb'
+    };
+    
+    // Build HTML for print
+    let eventsHTML = '';
+    Object.keys(groupedEvents).forEach(monthYear => {
+      eventsHTML += `
+        <div class="month-section">
+          <h2 class="month-header">${monthYear}</h2>
+          <div class="events-list">
+      `;
+      
+      groupedEvents[monthYear].forEach(event => {
+        const date = parseLocalDate(event.date);
+        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const bgColor = categoryColors[event.category] || '#ffffff';
+        
+        eventsHTML += `
+          <div class="event-row" style="background-color: ${bgColor};">
+            <div class="event-date">${dateStr}</div>
+            <div class="event-category">${event.category.toUpperCase()}</div>
+            <div class="event-title">${event.title}</div>
+          </div>
+        `;
+        
+        if (event.notes) {
+          eventsHTML += `
+            <div class="event-notes">${event.notes}</div>
+          `;
+        }
+      });
+      
+      eventsHTML += `
+          </div>
+        </div>
+      `;
+    });
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${formData.studentName || 'Student'} - College Planning Timeline</title>
+        <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;600;700&display=swap" rel="stylesheet">
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            font-family: 'Lato', Arial, sans-serif;
+            color: #212121;
+            padding: 0.5in;
+            line-height: 1.4;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            color-adjust: exact;
+          }
+          
+          .header {
+            border-bottom: 4px solid #ffc740;
+            padding-bottom: 0.3in;
+            margin-bottom: 0.3in;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+          }
+          
+          .logo-wordmark {
+            height: 50px;
+            width: auto;
+          }
+          
+          .header-text {
+            flex: 1;
+          }
+          
+          .timeline-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #212121;
+          }
+          
+          .timeline-info {
+            font-size: 11px;
+            color: #666666;
+          }
+          
+          .month-section {
+            margin-bottom: 0.25in;
+            page-break-inside: avoid;
+          }
+          
+          .month-header {
+            font-size: 16px;
+            font-weight: 700;
+            color: #212121;
+            border-bottom: 2px solid #ffc740;
+            padding-bottom: 4px;
+            margin-bottom: 10px;
+          }
+          
+          .events-list {
+            margin-left: 0;
+          }
+          
+          .event-row {
+            display: grid;
+            grid-template-columns: 70px 120px 1fr;
+            gap: 10px;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            align-items: center;
+            page-break-inside: avoid;
+          }
+          
+          .event-date {
+            font-size: 10px;
+            color: #666666;
+            font-weight: 400;
+          }
+          
+          .event-category {
+            font-size: 9px;
+            color: #666666;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+          }
+          
+          .event-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #212121;
+          }
+          
+          .event-notes {
+            font-size: 9px;
+            color: #666666;
+            font-style: italic;
+            margin-left: 200px;
+            margin-top: -4px;
+            margin-bottom: 8px;
+          }
+          
+          .footer {
+            margin-top: 0.3in;
+            padding-top: 0.15in;
+            border-top: 2px solid #ffc740;
+            font-size: 10px;
+            color: #666666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+          }
+          
+          .logo-icon {
+            height: 30px;
+            width: auto;
+          }
+          
+          @media print {
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              color-adjust: exact !important;
+            }
+            
+            body {
+              padding: 0.5in;
+              background: white !important;
+            }
+            
+            .header {
+              border-bottom: 4px solid #ffc740 !important;
+            }
+            
+            .month-header {
+              border-bottom: 2px solid #ffc740 !important;
+              color: #212121 !important;
+            }
+            
+            .month-section {
+              page-break-inside: avoid;
+            }
+            
+            .event-row {
+              page-break-inside: avoid;
+              border: 1px solid #e0e0e0 !important;
+            }
+            
+            .footer {
+              border-top: 2px solid #ffc740 !important;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <img src="https://www.dropbox.com/scl/fi/d1p2twwajizwnz5hsxykq/CS-Wordmark-Yellow.svg?rlkey=jei6tr6cz44fs61vvvu4361ya&st=x66dt30q&raw=1" class="logo-wordmark" alt="City Smarts" />
+          <div class="header-text">
+            <div class="timeline-title">College Planning Timeline for ${formData.studentName || 'Student'}</div>
+            <div class="timeline-info">Starting ${gradeText} • Generated ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+          </div>
+        </div>
+        
+        ${eventsHTML}
+        
+        <div class="footer">
+          <img src="https://www.dropbox.com/scl/fi/xjwwp3f1g92wxedjnfmn2/CS-Logo-Yellow.svg?rlkey=mb2pjn9pb0ondxahbo30b2hoi&st=gmonbtb4&raw=1" class="logo-icon" alt="City Smarts" />
+          <span>This timeline was created by City Smarts Inc.</span>
+        </div>
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    
+    // Trigger print dialog after content loads
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    };
+  };
+
+  const groupedEvents = useMemo(() => {
+    const groups = {};
+    events.forEach(event => {
+      const date = parseLocalDate(event.date);
+      const monthYear = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+      if (!groups[monthYear]) groups[monthYear] = [];
+      groups[monthYear].push(event);
+    });
+    return groups;
+  }, [events]);
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: '#fafafa',
+      fontFamily: '"Lato", "Helvetica Neue", Arial, sans-serif',
+      color: '#212121'
+    }}>
+      {/* Header */}
+      <div style={{
+        background: '#ffffff',
+        borderBottom: '3px solid #ffc740',
+        color: '#212121',
+        padding: '2rem 2rem 1.5rem',
+        marginBottom: '2rem'
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+            <img src="https://www.dropbox.com/scl/fi/xjwwp3f1g92wxedjnfmn2/CS-Logo-Yellow.svg?rlkey=mb2pjn9pb0ondxahbo30b2hoi&st=gmonbtb4&raw=1" alt="City Smarts" style={{ height: '40px', width: 'auto' }} />
+            <h1 style={{
+              margin: 0,
+              fontSize: '2rem',
+              fontWeight: '400',
+              letterSpacing: '0.5px',
+              color: '#212121',
+              fontFamily: '"Lato", sans-serif'
+            }}>
+              City Smarts – Journey Mapper
+            </h1>
+          </div>
+          <p style={{
+            margin: 0,
+            fontSize: '1rem',
+            color: '#666',
+            fontFamily: '"Lato", sans-serif',
+            fontWeight: '300'
+          }}>
+            A tool to map the college journey from here to <em>accepted</em>.
+          </p>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem 4rem' }}>
+        {/* Form Section */}
+        <div style={{
+          background: 'white',
+          borderRadius: '8px',
+          padding: '2rem',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          marginBottom: '1.5rem',
+          border: '1px solid #e0e0e0'
+        }}>
+          <h2 style={{
+            fontSize: '1.5rem',
+            marginBottom: '1.5rem',
+            color: '#212121',
+            fontWeight: '400',
+            borderBottom: '2px solid #ffc740',
+            paddingBottom: '0.5rem',
+            fontFamily: '"Lato", sans-serif'
+          }}>
+            Student Information
+          </h2>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#2c3e50', fontFamily: '"Lato", sans-serif', fontSize: '0.9rem' }}>
+                Student Name
+              </label>
+              <input
+                type="text"
+                value={formData.studentName}
+                onChange={(e) => updateFormData('studentName', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d0d0d0',
+                  borderRadius: '4px',
+                  fontSize: '0.95rem',
+                  fontFamily: '"Lato", sans-serif',
+                  transition: 'border-color 0.2s'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#ffc740'}
+                onBlur={(e) => e.target.style.borderColor = '#d0d0d0'}
+                placeholder="Enter student name"
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#2c3e50', fontFamily: '"Lato", sans-serif', fontSize: '0.9rem' }}>
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => updateFormData('startDate', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d0d0d0',
+                  borderRadius: '4px',
+                  fontSize: '0.95rem',
+                  fontFamily: '"Lato", sans-serif'
+                }}
+                onFocus={(e) => e.target.style.borderColor = '#ffc740'}
+                onBlur={(e) => e.target.style.borderColor = '#d0d0d0'}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#2c3e50', fontFamily: '"Lato", sans-serif', fontSize: '0.9rem' }}>
+                Starting Grade
+              </label>
+              <select
+                value={formData.startingGrade}
+                onChange={(e) => updateFormData('startingGrade', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d0d0d0',
+                  borderRadius: '4px',
+                  fontSize: '0.95rem',
+                  fontFamily: '"Lato", sans-serif',
+                  background: 'white'
+                }}
+              >
+                <option value="9">9th Grade</option>
+                <option value="10">10th Grade</option>
+                <option value="11">11th Grade</option>
+                <option value="12">12th Grade</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#2c3e50', fontFamily: '"Lato", sans-serif', fontSize: '0.9rem' }}>
+                Cadence
+              </label>
+              <select
+                value={formData.cadence}
+                onChange={(e) => updateFormData('cadence', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d0d0d0',
+                  borderRadius: '4px',
+                  fontSize: '0.95rem',
+                  fontFamily: '"Lato", sans-serif',
+                  background: 'white'
+                }}
+              >
+                <option value="high-touch">High-Touch</option>
+                <option value="low-touch">Low-Touch</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#2c3e50', fontFamily: '"Lato", sans-serif', fontSize: '0.9rem' }}>
+                Curriculum
+              </label>
+              <select
+                value={formData.curriculum}
+                onChange={(e) => updateFormData('curriculum', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d0d0d0',
+                  borderRadius: '4px',
+                  fontSize: '0.95rem',
+                  fontFamily: '"Lato", sans-serif',
+                  background: 'white'
+                }}
+              >
+                <option value="standard">Standard</option>
+                <option value="ap">AP (Advanced Placement)</option>
+                <option value="ib">IB (International Baccalaureate)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ marginTop: '2rem' }}>
+            <label style={{ display: 'block', marginBottom: '1rem', fontWeight: '600', color: '#495057', fontFamily: '"Lora", serif', fontSize: '1.1rem' }}>
+              Application Systems
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+              {[
+                { key: 'common_app', label: 'Common App' },
+                { key: 'uc_system', label: 'UC System' },
+                { key: 'ucas', label: 'UCAS (UK)' },
+                { key: 'oxbridge', label: 'Oxbridge' },
+                { key: 'canada', label: 'Canada' }
+              ].map(system => (
+                <label key={system.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontFamily: '"Lora", serif' }}>
+                  <input
+                    type="checkbox"
+                    checked={formData.applicationSystems[system.key]}
+                    onChange={(e) => updateApplicationSystem(system.key, e.target.checked)}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                  />
+                  {system.label}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#495057', fontFamily: '"Lora", serif' }}>
+                Test Prep Provider
+              </label>
+              <select
+                value={formData.testPrepProvider}
+                onChange={(e) => updateFormData('testPrepProvider', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '2px solid #dee2e6',
+                  borderRadius: '6px',
+                  fontSize: '1rem',
+                  fontFamily: '"Lora", serif',
+                  background: 'white'
+                }}
+              >
+                <option value="city-smarts">City Smarts</option>
+                <option value="outside">Outside Provider</option>
+                <option value="undecided">Undecided</option>
+                <option value="none">None</option>
+              </select>
+            </div>
+
+            {(formData.testPrepProvider === 'city-smarts' || formData.testPrepProvider === 'undecided') && parseInt(formData.startingGrade) < 12 && (
+              <>
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontFamily: '"Lora", serif' }}>
+                    <input
+                      type="checkbox"
+                      checked={formData.assessmentNeeded}
+                      onChange={(e) => updateFormData('assessmentNeeded', e.target.checked)}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                    />
+                    <span style={{ fontWeight: '600', color: '#495057' }}>Assessment Needed</span>
+                  </label>
+                  <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', color: '#6c757d', fontFamily: '"Lora", serif' }}>
+                    Uncheck if student has already completed assessment
+                  </p>
+                </div>
+
+                {formData.assessmentNeeded && (
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#495057', fontFamily: '"Lora", serif' }}>
+                      Assessment Timing
+                    </label>
+                    <select
+                      value={formData.assessmentTiming}
+                      onChange={(e) => updateFormData('assessmentTiming', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        border: '2px solid #dee2e6',
+                        borderRadius: '6px',
+                        fontSize: '1rem',
+                        fontFamily: '"Lora", serif',
+                        background: 'white'
+                      }}
+                    >
+                      {(() => {
+                        const grade = parseInt(formData.startingGrade);
+                        const startDate = new Date(formData.startDate);
+                        const startMonth = startDate.getMonth(); // 0-11 (0=Jan, 1=Feb, etc)
+                        const startYear = startDate.getFullYear();
+                        
+                        // 12th grade - no assessment options (too late)
+                        if (grade === 12) {
+                          return <option value="asap">ASAP (within 2 weeks)</option>;
+                        }
+                        
+                        const options = [];
+                        
+                        // Spring 10th - only if 10th grade or earlier AND before March
+                        if (grade < 10) {
+                          options.push(<option key="spring_10th" value="spring_10th">Spring 10th Grade</option>);
+                        } else if (grade === 10 && startMonth < 2) { // Before March (month 2)
+                          options.push(<option key="spring_10th" value="spring_10th">Spring 10th Grade</option>);
+                        }
+                        
+                        // Summer after 10th - only if 10th grade or earlier AND before June
+                        if (grade < 10) {
+                          options.push(<option key="summer_10th" value="summer_after_10th">Summer After 10th</option>);
+                        } else if (grade === 10 && startMonth < 5) { // Before June (month 5)
+                          options.push(<option key="summer_10th" value="summer_after_10th">Summer After 10th</option>);
+                        }
+                        
+                        // Fall 11th - only if before 11th grade, OR in early fall of 11th (before November)
+                        if (grade < 11) {
+                          options.push(<option key="fall_11th" value="fall_11th">Fall 11th Grade</option>);
+                        } else if (grade === 11 && startMonth >= 8 && startMonth < 10) { 
+                          // Only if starting in Sept or Oct of 11th grade (months 8-9)
+                          options.push(<option key="fall_11th" value="fall_11th">Fall 11th Grade</option>);
+                        }
+                        
+                        // Spring 11th - only if before 11th grade, OR in 11th grade before March
+                        if (grade < 11) {
+                          options.push(<option key="spring_11th" value="spring_11th">Spring 11th Grade</option>);
+                        } else if (grade === 11 && startMonth < 2) { // Before March (month 2)
+                          options.push(<option key="spring_11th" value="spring_11th">Spring 11th Grade</option>);
+                        }
+                        
+                        // ASAP always available
+                        options.push(<option key="asap" value="asap">ASAP (within 2 weeks)</option>);
+                        
+                        return options;
+                      })()}
+                    </select>
+                  </div>
+                )}
+              </>
+            )}
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#495057', fontFamily: '"Lora", serif' }}>
+                Testing Plan
+              </label>
+              <select
+                value={formData.testing_plan}
+                onChange={(e) => updateFormData('testing_plan', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '2px solid #dee2e6',
+                  borderRadius: '6px',
+                  fontSize: '1rem',
+                  fontFamily: '"Lora", serif',
+                  background: 'white'
+                }}
+              >
+                <option value="sat">SAT</option>
+                <option value="act">ACT</option>
+                <option value="both">Both SAT & ACT</option>
+                <option value="test_optional">Test Optional</option>
+                <option value="undecided">Undecided</option>
+              </select>
+            </div>
+          </div>
+
+          {formData.testing_plan !== 'test_optional' && formData.testing_plan !== 'none' && formData.testing_plan !== 'undecided' && (
+            <div style={{ marginTop: '2rem' }}>
+              <label style={{ display: 'block', marginBottom: '1rem', fontWeight: '600', color: '#495057', fontFamily: '"Lora", serif', fontSize: '1.1rem' }}>
+                Select Test Seasons
+              </label>
+              <p style={{ margin: '0 0 1rem 0', fontSize: '0.9rem', color: '#6c757d', fontFamily: '"Lora", serif' }}>
+                Choose which testing seasons you'd like to consider, then select specific dates within those seasons.
+              </p>
+              
+              {(() => {
+                const seasons = getTestDatesBySeason();
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    {Object.entries(seasons).map(([seasonKey, seasonData]) => {
+                      if (seasonData.dates.length === 0) return null;
+                      
+                      return (
+                        <div key={seasonKey} style={{
+                          background: '#f8f9fa',
+                          padding: '1.25rem',
+                          borderRadius: '8px',
+                          border: '2px solid',
+                          borderColor: formData.selectedTestSeasons.includes(seasonKey) ? '#2a5298' : '#dee2e6'
+                        }}>
+                          <label style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '0.75rem', 
+                            cursor: 'pointer', 
+                            fontFamily: '"Lora", serif',
+                            marginBottom: '1rem'
+                          }}>
+                            <input
+                              type="checkbox"
+                              checked={formData.selectedTestSeasons.includes(seasonKey)}
+                              onChange={() => toggleTestSeason(seasonKey)}
+                              style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                            />
+                            <span style={{ fontWeight: '600', fontSize: '1.05rem', color: '#2c3e50' }}>
+                              {seasonData.label}
+                            </span>
+                          </label>
+                          
+                          {formData.selectedTestSeasons.includes(seasonKey) && (
+                            <div style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                              gap: '0.75rem',
+                              marginLeft: '2rem'
+                            }}>
+                              {seasonData.dates.map(testDate => (
+                                <label key={testDate.date} style={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  gap: '0.5rem', 
+                                  cursor: 'pointer', 
+                                  fontFamily: '"Lora", serif',
+                                  padding: '0.5rem',
+                                  background: 'white',
+                                  borderRadius: '4px',
+                                  border: '1px solid #dee2e6'
+                                }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.selectedTestDates.includes(testDate.date)}
+                                    onChange={() => toggleTestDate(testDate.date)}
+                                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                  />
+                                  {testDate.label}
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          <div style={{ marginTop: '2rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontFamily: '"Lora", serif', fontSize: '1.1rem' }}>
+              <input
+                type="checkbox"
+                checked={formData.essaySupport}
+                onChange={(e) => updateFormData('essaySupport', e.target.checked)}
+                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+              />
+              <span style={{ fontWeight: '600', color: '#495057' }}>Include Essay Support</span>
+            </label>
+          </div>
+
+          <button
+            onClick={generateTimeline}
+            style={{
+              marginTop: '2rem',
+              padding: '0.875rem 2rem',
+              background: '#ffc740',
+              color: '#212121',
+              border: 'none',
+              borderRadius: '4px',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              fontFamily: '"Lato", sans-serif',
+              boxShadow: '0 2px 4px rgba(255,199,64,0.3)',
+              transition: 'all 0.2s',
+              letterSpacing: '0.5px'
+            }}
+            onMouseOver={(e) => {
+              e.target.style.background = '#f0b830';
+              e.target.style.boxShadow = '0 4px 8px rgba(255,199,64,0.4)';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.background = '#ffc740';
+              e.target.style.boxShadow = '0 2px 4px rgba(255,199,64,0.3)';
+            }}
+          >
+            Generate Timeline
+          </button>
+        </div>
+
+        {/* Timeline Display */}
+        {events.length > 0 && (
+          <>
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '2rem',
+              boxShadow: '0 2px 15px rgba(0,0,0,0.08)',
+              marginBottom: '2rem'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <h2 style={{
+                  fontSize: '1.8rem',
+                  margin: 0,
+                  color: '#1e3c72',
+                  fontWeight: '600'
+                }}>
+                  Timeline for {formData.studentName || 'Student'}
+                </h2>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <button
+                    onClick={() => setShowCustomEventForm(!showCustomEventForm)}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      background: '#28a745',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      fontFamily: '"Lora", serif',
+                      fontWeight: '600'
+                    }}
+                  >
+                    <Plus size={18} />
+                    Add Event
+                  </button>
+                  <button
+                    onClick={exportToCSV}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      background: '#17a2b8',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      fontFamily: '"Lora", serif',
+                      fontWeight: '600'
+                    }}
+                  >
+                    <Download size={18} />
+                    Download CSV
+                  </button>
+                  <button
+                    onClick={() => setShowCSVText(!showCSVText)}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      background: '#0f9d58',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontFamily: '"Lora", serif',
+                      fontWeight: '600'
+                    }}
+                  >
+                    {showCSVText ? 'Hide' : 'Show'} CSV for Sheets
+                  </button>
+                  <button
+                    onClick={exportToICS}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      background: '#fd7e14',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      fontFamily: '"Lora", serif',
+                      fontWeight: '600'
+                    }}
+                  >
+                    <Download size={18} />
+                    .ics Calendar
+                  </button>
+                  <button
+                    onClick={printPDF}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      background: '#ffc740',
+                      color: '#212121',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      fontFamily: '"Lora", serif',
+                      fontWeight: '700'
+                    }}
+                  >
+                    <Download size={18} />
+                    Print PDF
+                  </button>
+                </div>
+              </div>
+
+              {showCSVText && (
+                <div style={{
+                  background: '#f8f9fa',
+                  padding: '1.5rem',
+                  borderRadius: '8px',
+                  marginBottom: '2rem',
+                  border: '2px solid #17a2b8'
+                }}>
+                  <h3 style={{ marginTop: 0, color: '#17a2b8', fontFamily: '"Lora", serif' }}>CSV Text for Google Sheets</h3>
+                  <p style={{ margin: '0 0 1rem 0', fontSize: '0.9rem', color: '#6c757d', fontFamily: '"Lora", serif' }}>
+                    Copy this text and paste it into Google Sheets (select cell A1, then paste):
+                  </p>
+                  <textarea
+                    readOnly
+                    value={(() => {
+                      const headers = ['Date', 'Event', 'Category', 'Notes'].join('\t');
+                      const rows = events.map(e => {
+                        const date = parseLocalDate(e.date).toLocaleDateString();
+                        return [date, e.title, e.category, e.notes || ''].join('\t');
+                      });
+                      return [headers, ...rows].join('\n');
+                    })()}
+                    onClick={(e) => e.target.select()}
+                    style={{
+                      width: '100%',
+                      minHeight: '200px',
+                      padding: '1rem',
+                      fontFamily: 'monospace',
+                      fontSize: '0.9rem',
+                      border: '1px solid #dee2e6',
+                      borderRadius: '4px',
+                      background: 'white',
+                      cursor: 'text'
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const textarea = document.querySelector('textarea');
+                      textarea.select();
+                      document.execCommand('copy');
+                      alert('CSV text copied! Paste into Google Sheets.');
+                    }}
+                    style={{
+                      marginTop: '1rem',
+                      padding: '0.75rem 1.5rem',
+                      background: '#0f9d58',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontFamily: '"Lora", serif',
+                      fontWeight: '600'
+                    }}
+                  >
+                    Copy to Clipboard
+                  </button>
+                </div>
+              )}
+
+              {showCustomEventForm && (
+                <div style={{
+                  background: '#f8f9fa',
+                  padding: '1.5rem',
+                  borderRadius: '8px',
+                  marginBottom: '2rem',
+                  border: '2px solid #28a745'
+                }}>
+                  <h3 style={{ marginTop: 0, color: '#28a745', fontFamily: '"Lora", serif' }}>Add Custom Event</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                    <input
+                      type="date"
+                      value={customEvent.date}
+                      onChange={(e) => setCustomEvent({ ...customEvent, date: e.target.value })}
+                      style={{ padding: '0.75rem', border: '2px solid #dee2e6', borderRadius: '6px', fontFamily: '"Lora", serif' }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Event title"
+                      value={customEvent.title}
+                      onChange={(e) => setCustomEvent({ ...customEvent, title: e.target.value })}
+                      style={{ padding: '0.75rem', border: '2px solid #dee2e6', borderRadius: '6px', fontFamily: '"Lora", serif' }}
+                    />
+                    <select
+                      value={customEvent.category}
+                      onChange={(e) => setCustomEvent({ ...customEvent, category: e.target.value })}
+                      style={{ padding: '0.75rem', border: '2px solid #dee2e6', borderRadius: '6px', fontFamily: '"Lora", serif' }}
+                    >
+                      <option value="Custom">Custom</option>
+                      <option value="Milestone">Milestone</option>
+                      <option value="Testing">Testing</option>
+                      <option value="Essay">Essay</option>
+                      <option value="Application">Application</option>
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="Notes (optional)"
+                      value={customEvent.notes}
+                      onChange={(e) => setCustomEvent({ ...customEvent, notes: e.target.value })}
+                      style={{ padding: '0.75rem', border: '2px solid #dee2e6', borderRadius: '6px', fontFamily: '"Lora", serif' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                    <button
+                      onClick={addCustomEvent}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        background: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontFamily: '"Lora", serif',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Add Event
+                    </button>
+                    <button
+                      onClick={() => setShowCustomEventForm(false)}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontFamily: '"Lora", serif',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div style={{ marginTop: '1.5rem' }}>
+                {Object.entries(groupedEvents).map(([monthYear, monthEvents]) => (
+                  <div key={monthYear} style={{ marginBottom: '1.5rem' }}>
+                    <h3 style={{
+                      fontSize: '1.1rem',
+                      color: '#212121',
+                      marginBottom: '0.75rem',
+                      paddingBottom: '0.25rem',
+                      borderBottom: '2px solid #ffc740',
+                      fontWeight: '600',
+                      fontFamily: '"Lato", sans-serif'
+                    }}>
+                      {monthYear}
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {monthEvents.map(event => (
+                        <div
+                          key={event.id}
+                          style={{
+                            background: event.category === 'Milestone' ? '#f0f9f8' :
+                                       event.category === 'Testing' ? '#fff9e6' :
+                                       event.category === 'Essay' ? '#fff0f3' :
+                                       event.category === 'Application' ? '#e8f8e8' :
+                                       event.category === 'Financial Aid' ? '#e6f7ff' :
+                                       event.category === 'Check-in' ? '#fafafa' :
+                                       '#ffffff',
+                            padding: '0.875rem',
+                            borderRadius: '4px',
+                            border: '1px solid',
+                            borderColor: event.category === 'Milestone' ? '#b3e0dc' :
+                                        event.category === 'Testing' ? '#ffe599' :
+                                        event.category === 'Essay' ? '#ffc7d4' :
+                                        event.category === 'Application' ? '#a3d99c' :
+                                        event.category === 'Financial Aid' ? '#b3d9ff' :
+                                        '#e0e0e0',
+                            transition: 'box-shadow 0.2s'
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.boxShadow = '0 2px 6px rgba(255,199,64,0.2)';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
+                        >
+                          {editingEvent && editingEvent.id === event.id ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                <input
+                                  type="date"
+                                  value={editingEvent.date}
+                                  onChange={(e) => setEditingEvent({ ...editingEvent, date: e.target.value })}
+                                  style={{ padding: '0.5rem', border: '2px solid #dee2e6', borderRadius: '4px', fontFamily: '"Lora", serif' }}
+                                />
+                                <input
+                                  type="text"
+                                  value={editingEvent.title}
+                                  onChange={(e) => setEditingEvent({ ...editingEvent, title: e.target.value })}
+                                  style={{ flex: 1, padding: '0.5rem', border: '2px solid #dee2e6', borderRadius: '4px', fontFamily: '"Lora", serif' }}
+                                />
+                              </div>
+                              <input
+                                type="text"
+                                value={editingEvent.notes}
+                                onChange={(e) => setEditingEvent({ ...editingEvent, notes: e.target.value })}
+                                placeholder="Notes"
+                                style={{ padding: '0.5rem', border: '2px solid #dee2e6', borderRadius: '4px', fontFamily: '"Lora", serif' }}
+                              />
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                  onClick={saveEditedEvent}
+                                  style={{
+                                    padding: '0.5rem 1rem',
+                                    background: '#28a745',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.25rem'
+                                  }}
+                                >
+                                  <Check size={16} /> Save
+                                </button>
+                                <button
+                                  onClick={() => setEditingEvent(null)}
+                                  style={{
+                                    padding: '0.5rem 1rem',
+                                    background: '#6c757d',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.25rem'
+                                  }}
+                                >
+                                  <X size={16} /> Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <span style={{
+                                  fontSize: '0.8rem',
+                                  color: '#666',
+                                  fontWeight: '500',
+                                  fontFamily: '"Lato", sans-serif',
+                                  minWidth: '80px'
+                                }}>
+                                  {parseLocalDate(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                                <span style={{
+                                  padding: '0.2rem 0.6rem',
+                                  background: 'rgba(255,199,64,0.15)',
+                                  borderRadius: '3px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '600',
+                                  color: '#212121',
+                                  fontFamily: '"Lato", sans-serif',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px'
+                                }}>
+                                  {event.category}
+                                </span>
+                                <div style={{
+                                  fontSize: '0.95rem',
+                                  fontWeight: '500',
+                                  color: '#2c3e50',
+                                  fontFamily: '"Lato", sans-serif',
+                                  flex: 1
+                                }}>
+                                  {event.title}
+                                  {event.notes && (
+                                    <span style={{
+                                      fontSize: '0.85rem',
+                                      color: '#666',
+                                      fontWeight: '400',
+                                      marginLeft: '0.5rem',
+                                      fontStyle: 'italic'
+                                    }}>
+                                      — {event.notes}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                <button
+                                  onClick={() => startEditingEvent(event)}
+                                  style={{
+                                    padding: '0.4rem',
+                                    background: '#ffc740',
+                                    color: '#212121',
+                                    border: 'none',
+                                    borderRadius: '3px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center'
+                                  }}
+                                  title="Edit event"
+                                >
+                                  <Edit2 size={14} />
+                                </button>
+                                <button
+                                  onClick={() => deleteEvent(event.id)}
+                                  style={{
+                                    padding: '0.4rem',
+                                    background: '#dc3545',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '3px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center'
+                                  }}
+                                  title="Delete event"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '2rem',
+              boxShadow: '0 2px 15px rgba(0,0,0,0.08)',
+              textAlign: 'center'
+            }}>
+              <p style={{
+                margin: 0,
+                color: '#6c757d',
+                fontFamily: '"Lora", serif',
+                fontSize: '1rem'
+              }}>
+                Total Events: <strong>{events.length}</strong> • 
+                You can edit dates and details by clicking the edit button on any event.
+              </p>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+        
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<TimelineGenerator />);
+    </script>
+</body>
+</html>
