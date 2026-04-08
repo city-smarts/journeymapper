@@ -1541,10 +1541,10 @@ END:VCALENDAR`;
                         
                         const options = [];
                         
-                        // Spring 10th - only if 10th grade or earlier AND before March
+                        // Spring 10th - only if 10th grade or earlier AND before June (so spring is still ahead or current)
                         if (grade < 10) {
                           options.push(<option key="spring_10th" value="spring_10th">Spring 10th Grade</option>);
-                        } else if (grade === 10 && startMonth < 2) { // Before March (month 2)
+                        } else if (grade === 10 && startMonth < 5) { // Before June (month 5)
                           options.push(<option key="spring_10th" value="spring_10th">Spring 10th Grade</option>);
                         }
                         
