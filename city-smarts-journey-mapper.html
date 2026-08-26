@@ -79,60 +79,78 @@
             </svg>
         );
 
-// Test date data
+
+// ---------------------------------------------------------------------------
+// TEST DATE DATA
+// Verified 2026-08-26 against:
+//   SAT — College Board, satsuite.collegeboard.org/sat/dates-deadlines
+//   ACT — ACT, Inc. national test dates (act.org)
+// status: 'confirmed'   = published by the testing agency, deadlines official
+//         'anticipated' = date published by the agency but marked anticipated/
+//                         projected; deadline derived from the agency's own
+//                         published spacing (SAT: 15 days, ACT: 36 days)
+//         'projected'   = not yet published by the agency; City Smarts estimate
+//                         from the historical pattern. Confirm before relying.
+// ---------------------------------------------------------------------------
+
 const SAT_DATES = [
-  { date: '2026-03-14', label: 'March 2026', registration_deadline: '2026-02-13' },
-  { date: '2026-05-02', label: 'May 2026', registration_deadline: '2026-04-02' },
-  { date: '2026-06-06', label: 'June 2026', registration_deadline: '2026-05-07' },
-  { date: '2026-08-22', label: 'August 2026', registration_deadline: '2026-07-23' },
-  { date: '2026-09-12', label: 'September 2026', registration_deadline: '2026-08-13' },
-  { date: '2026-10-03', label: 'October 2026', registration_deadline: '2026-09-03' },
-  { date: '2026-11-07', label: 'November 2026', registration_deadline: '2026-10-08' },
-  { date: '2026-12-05', label: 'December 2026', registration_deadline: '2026-11-05' },
-  { date: '2027-03-06', label: 'March 2027', registration_deadline: '2027-02-05' },
-  { date: '2027-05-01', label: 'May 2027', registration_deadline: '2027-04-01' },
-  { date: '2027-06-05', label: 'June 2027', registration_deadline: '2027-05-06' },
-  { date: '2027-08-28', label: 'August 2027', registration_deadline: '2027-07-29' },
-  { date: '2027-10-02', label: 'October 2027', registration_deadline: '2027-09-02' },
-  { date: '2027-11-06', label: 'November 2027', registration_deadline: '2027-10-07' },
-  { date: '2027-12-04', label: 'December 2027', registration_deadline: '2027-11-04' },
-  { date: '2028-03-11', label: 'March 2028', registration_deadline: '2028-02-10' },
-  { date: '2028-05-06', label: 'May 2028', registration_deadline: '2028-04-06' },
-  { date: '2028-06-03', label: 'June 2028', registration_deadline: '2028-05-04' },
-  { date: '2028-08-26', label: 'August 2028', registration_deadline: '2028-07-27' },
-  { date: '2028-10-07', label: 'October 2028', registration_deadline: '2028-09-07' },
-  { date: '2028-11-04', label: 'November 2028', registration_deadline: '2028-10-05' },
-  { date: '2028-12-02', label: 'December 2028', registration_deadline: '2028-11-02' },
-  { date: '2029-03-10', label: 'March 2029', registration_deadline: '2029-02-09' },
-  { date: '2029-05-05', label: 'May 2029', registration_deadline: '2029-04-05' },
-  { date: '2029-06-02', label: 'June 2029', registration_deadline: '2029-05-03' }
+  // --- 2026-27: CONFIRMED by College Board ---
+  { date: '2026-09-12', label: 'September 2026', registration_deadline: '2026-08-28', late_deadline: '2026-09-01', status: 'confirmed' },
+  { date: '2026-10-03', label: 'October 2026',   registration_deadline: '2026-09-18', late_deadline: '2026-09-22', status: 'confirmed' },
+  { date: '2026-11-07', label: 'November 2026',  registration_deadline: '2026-10-23', late_deadline: '2026-10-27', status: 'confirmed' },
+  { date: '2026-12-05', label: 'December 2026',  registration_deadline: '2026-11-20', late_deadline: '2026-11-24', status: 'confirmed' },
+  { date: '2027-03-06', label: 'March 2027',     registration_deadline: '2027-02-19', late_deadline: '2027-02-23', status: 'confirmed' },
+  { date: '2027-05-01', label: 'May 2027',       registration_deadline: '2027-04-16', late_deadline: '2027-04-20', status: 'confirmed' },
+  { date: '2027-06-05', label: 'June 2027',      registration_deadline: '2027-05-21', late_deadline: '2027-05-25', status: 'confirmed' },
+
+  // --- 2027-28: dates ANTICIPATED by College Board; deadlines derived (test date - 15 days) ---
+  { date: '2027-08-28', label: 'August 2027',    registration_deadline: '2027-08-13', status: 'anticipated' },
+  { date: '2027-09-18', label: 'September 2027', registration_deadline: '2027-09-03', status: 'anticipated' },
+  { date: '2027-10-02', label: 'October 2027',   registration_deadline: '2027-09-17', status: 'anticipated' },
+  { date: '2027-11-06', label: 'November 2027',  registration_deadline: '2027-10-22', status: 'anticipated' },
+  { date: '2027-12-04', label: 'December 2027',  registration_deadline: '2027-11-19', status: 'anticipated' },
+  { date: '2028-03-04', label: 'March 2028',     registration_deadline: '2028-02-18', status: 'anticipated' },
+  { date: '2028-05-06', label: 'May 2028',       registration_deadline: '2028-04-21', status: 'anticipated' },
+  { date: '2028-06-03', label: 'June 2028',      registration_deadline: '2028-05-19', status: 'anticipated' },
+
+  // --- 2028-29: NOT yet published by College Board. City Smarts projection. ---
+  { date: '2028-08-26', label: 'August 2028',    registration_deadline: '2028-08-11', status: 'projected' },
+  { date: '2028-09-16', label: 'September 2028', registration_deadline: '2028-09-01', status: 'projected' },
+  { date: '2028-10-07', label: 'October 2028',   registration_deadline: '2028-09-22', status: 'projected' },
+  { date: '2028-11-04', label: 'November 2028',  registration_deadline: '2028-10-20', status: 'projected' },
+  { date: '2028-12-02', label: 'December 2028',  registration_deadline: '2028-11-17', status: 'projected' },
+  { date: '2029-03-03', label: 'March 2029',     registration_deadline: '2029-02-16', status: 'projected' },
+  { date: '2029-05-05', label: 'May 2029',       registration_deadline: '2029-04-20', status: 'projected' },
+  { date: '2029-06-02', label: 'June 2029',      registration_deadline: '2029-05-18', status: 'projected' }
 ];
 
 const ACT_DATES = [
-  { date: '2026-02-07', label: 'February 2026', registration_deadline: '2026-01-09' },
-  { date: '2026-04-04', label: 'April 2026', registration_deadline: '2026-03-06' },
-  { date: '2026-06-13', label: 'June 2026', registration_deadline: '2026-05-15' },
-  { date: '2026-07-18', label: 'July 2026', registration_deadline: '2026-06-19' },
-  { date: '2026-09-12', label: 'September 2026', registration_deadline: '2026-08-14' },
-  { date: '2026-10-24', label: 'October 2026', registration_deadline: '2026-09-25' },
-  { date: '2026-12-12', label: 'December 2026', registration_deadline: '2026-11-13' },
-  { date: '2027-02-06', label: 'February 2027', registration_deadline: '2027-01-08' },
-  { date: '2027-04-10', label: 'April 2027', registration_deadline: '2027-03-12' },
-  { date: '2027-06-12', label: 'June 2027', registration_deadline: '2027-05-14' },
-  { date: '2027-07-17', label: 'July 2027', registration_deadline: '2027-06-18' },
-  { date: '2027-09-11', label: 'September 2027', registration_deadline: '2027-08-13' },
-  { date: '2027-10-23', label: 'October 2027', registration_deadline: '2027-09-24' },
-  { date: '2027-12-11', label: 'December 2027', registration_deadline: '2027-11-12' },
-  { date: '2028-02-12', label: 'February 2028', registration_deadline: '2028-01-14' },
-  { date: '2028-04-08', label: 'April 2028', registration_deadline: '2028-03-10' },
-  { date: '2028-06-10', label: 'June 2028', registration_deadline: '2028-05-12' },
-  { date: '2028-07-15', label: 'July 2028', registration_deadline: '2028-06-16' },
-  { date: '2028-09-09', label: 'September 2028', registration_deadline: '2028-08-11' },
-  { date: '2028-10-28', label: 'October 2028', registration_deadline: '2028-09-29' },
-  { date: '2028-12-09', label: 'December 2028', registration_deadline: '2028-11-10' },
-  { date: '2029-02-10', label: 'February 2029', registration_deadline: '2029-01-12' },
-  { date: '2029-04-14', label: 'April 2029', registration_deadline: '2029-03-16' },
-  { date: '2029-06-09', label: 'June 2029', registration_deadline: '2029-05-11' }
+  // --- 2026-27: CONFIRMED by ACT ---
+  { date: '2026-09-19', label: 'September 2026', registration_deadline: '2026-08-14', late_deadline: '2026-09-01', status: 'confirmed' },
+  { date: '2026-10-17', label: 'October 2026',   registration_deadline: '2026-09-11', late_deadline: '2026-09-29', status: 'confirmed' },
+  { date: '2026-12-12', label: 'December 2026',  registration_deadline: '2026-11-06', late_deadline: '2026-11-29', status: 'confirmed' },
+  { date: '2027-02-27', label: 'February 2027',  registration_deadline: '2027-01-22', late_deadline: '2027-02-09', status: 'confirmed', note: 'Not offered in New York' },
+  { date: '2027-04-10', label: 'April 2027',     registration_deadline: '2027-03-05', late_deadline: '2027-03-23', status: 'confirmed' },
+  { date: '2027-06-12', label: 'June 2027',      registration_deadline: '2027-05-07', late_deadline: '2027-05-25', status: 'confirmed' },
+  { date: '2027-07-10', label: 'July 2027',      registration_deadline: '2027-06-04', late_deadline: '2027-06-22', status: 'confirmed' },
+
+  // --- 2027-28: dates PROJECTED by ACT; deadlines derived (test date - 36 days) ---
+  { date: '2027-09-11', label: 'September 2027', registration_deadline: '2027-08-06', status: 'anticipated' },
+  { date: '2027-10-16', label: 'October 2027',   registration_deadline: '2027-09-10', status: 'anticipated' },
+  { date: '2027-12-11', label: 'December 2027',  registration_deadline: '2027-11-05', status: 'anticipated' },
+  { date: '2028-02-26', label: 'February 2028',  registration_deadline: '2028-01-21', status: 'anticipated' },
+  { date: '2028-04-08', label: 'April 2028',     registration_deadline: '2028-03-03', status: 'anticipated' },
+  { date: '2028-06-10', label: 'June 2028',      registration_deadline: '2028-05-05', status: 'anticipated' },
+  { date: '2028-07-15', label: 'July 2028',      registration_deadline: '2028-06-09', status: 'anticipated' },
+
+  // --- 2028-29: NOT yet published by ACT. City Smarts projection. ---
+  { date: '2028-09-09', label: 'September 2028', registration_deadline: '2028-08-04', status: 'projected' },
+  { date: '2028-10-14', label: 'October 2028',   registration_deadline: '2028-09-08', status: 'projected' },
+  { date: '2028-12-09', label: 'December 2028',  registration_deadline: '2028-11-03', status: 'projected' },
+  { date: '2029-02-24', label: 'February 2029',  registration_deadline: '2029-01-19', status: 'projected' },
+  { date: '2029-04-07', label: 'April 2029',     registration_deadline: '2029-03-02', status: 'projected' },
+  { date: '2029-06-09', label: 'June 2029',      registration_deadline: '2029-05-04', status: 'projected' },
+  { date: '2029-07-14', label: 'July 2029',      registration_deadline: '2029-06-08', status: 'projected' }
 ];
 
 const APP_MILESTONES = {
@@ -270,12 +288,14 @@ function TimelineGenerator() {
     
     // When displaying "both", add test type to label
     const formatDateLabel = (testDate) => {
+      let label = testDate.label;
       if (formData.testing_plan === 'both') {
         const isSAT = SAT_DATES.find(d => d.date === testDate.date);
-        const testType = isSAT ? 'SAT' : 'ACT';
-        return { ...testDate, label: `${testDate.label} ${testType}` };
+        label = `${label} ${isSAT ? 'SAT' : 'ACT'}`;
       }
-      return testDate;
+      if (testDate.status === 'projected') label = `${label} (projected)`;
+      else if (testDate.status === 'anticipated') label = `${label} (anticipated)`;
+      return { ...testDate, label };
     };
     
     const seasons = {
@@ -699,11 +719,26 @@ function TimelineGenerator() {
           testType = SAT_DATES.find(d => d.date === dateStr) ? 'SAT' : 'ACT';
         }
         
+        // Build the note: registration deadline, late deadline, and any caveats
+        const noteParts = [];
+        if (testDate.registration_deadline) {
+          noteParts.push(`Registration deadline: ${parseLocalDate(testDate.registration_deadline).toLocaleDateString()}`);
+        }
+        if (testDate.late_deadline) {
+          noteParts.push(`late registration through ${parseLocalDate(testDate.late_deadline).toLocaleDateString()}`);
+        }
+        if (testDate.note) noteParts.push(testDate.note);
+        if (testDate.status === 'anticipated') {
+          noteParts.push('Date anticipated by the testing agency; deadline estimated — confirm before registering');
+        } else if (testDate.status === 'projected') {
+          noteParts.push('Date not yet published; projected from prior years — confirm before registering');
+        }
+
         newEvents.push(createEvent(
           dateStr,
           `${testType} - ${testDate.label}`,
           'Testing',
-          testDate.registration_deadline ? `Registration deadline: ${parseLocalDate(testDate.registration_deadline).toLocaleDateString()}` : '',
+          noteParts.join(' • '),
           true,
           ['test-date']
         ));
@@ -1542,10 +1577,10 @@ END:VCALENDAR`;
                         
                         const options = [];
                         
-                        // Spring 10th - only if 10th grade or earlier AND before March
+                        // Spring 10th - only if 10th grade or earlier AND before June (so spring is still ahead or current)
                         if (grade < 10) {
                           options.push(<option key="spring_10th" value="spring_10th">Spring 10th Grade</option>);
-                        } else if (grade === 10 && startMonth < 2) { // Before March (month 2)
+                        } else if (grade === 10 && startMonth < 5) { // Before June (month 5)
                           options.push(<option key="spring_10th" value="spring_10th">Spring 10th Grade</option>);
                         }
                         
@@ -2198,6 +2233,7 @@ END:VCALENDAR`;
   );
 }
 
+export default TimelineGenerator;
         
         // Render the app
         const root = ReactDOM.createRoot(document.getElementById('root'));
